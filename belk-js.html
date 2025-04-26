@@ -1,0 +1,208 @@
+<style>
+  .fade-in {
+    opacity: 0.01;
+    transition: opacity 0.1s ease-out;
+  }
+  .fade-in.active {
+    opacity: 1;
+  }
+  @media screen and (min-width: 900px) {
+    .mobile {
+      display: none !important;
+    }
+  }
+  @media screen and (max-width: 900px) {
+    .desktop {
+      display: none !important;
+    }
+  }
+</style>
+<script>
+  // COOKIE
+  function getSetCookie (k, v, days) {
+    const myDate = function (days) {
+      return new Date(Date.now() + (days ? days * 86400000 : 31556952000)).toUTCString()
+    }
+    const expStr = ';expires='
+    // SET COOKIE
+    if (days || v || v === 0) {
+      let value = k + '=' + encodeURIComponent(v) + expStr + myDate(days)
+      if (v || v === 0) value += ';path=/'
+      document.cookie = value
+      return
+    }
+    // PARSE AND RETURN COOKIE
+    const cookies = document.cookie.split(/\s*;\s*/)
+    for (let i = 0; i < cookies.length; i++) {
+      const c = cookies[i]
+      const arr = c.split('=')
+      if (arr && arr.length && c.indexOf(k) > -1) {
+        if (arr[0] !== k) continue
+        return decodeURIComponent(arr[1]) 
+      }
+    }
+    return false
+  }
+  // CREATE ELEMENT
+  function createEl (tagName, propName) {
+    const el = document.createElement(tagName)
+    const isId = propName.indexOf('#') > -1
+    propName = propName.replace('.', '').replace('#', '')
+    if (propName) isId ? el.id = propName : el.className = propName
+    return el
+  }
+  // APPEND CHILD
+  function appendChild (parent, children) {
+    if (!Array.isArray(children)) children = [children]
+    for (let i = 0; i < children.length; i++) parent.appendChild(children[i])
+  }
+  // GET ELEMENT
+  function getEl (sel, all) {
+    const els = all ? document.querySelectorAll(sel) : document.querySelector(sel)
+    return all ? (els && els.length ? els : null) : els
+  }
+  // GET PARENT
+  function getParent (el, name, isTagName) {
+    let isClass = true
+    let isId = name.indexOf('#') > -1
+    if (isId) isClass = false
+    if (isClass) name = name.replace('.', '')
+    if (isTagName) {
+      isClass = isId = false
+      name = name.toUpperCase()
+    }
+    for (let i = 0; i < 15; i++) {
+      el = !i ? el : el.parentNode
+      if (!el || (el.tagName && el.tagName === 'BODY')) return
+      if (isTagName || isId) {
+        const matchVal = isTagName ? el.tagName : el.id
+        if (matchVal === name) return el
+      } else {
+        if (classHelper(el, 'c', name)) return el
+      }
+    }
+  }
+  // GET CHILD
+  function getChild (el, sel, all) {
+    const childEls = all ? el.querySelectorAll(sel) : el.querySelector(sel)
+    return all ? (childEls && childEls.length ? childEls : null) : childEls
+  }
+  // INNER HTML
+  function innerHtml (el, str) {
+    if (!str && str !== '') return el.innerHTML
+    el.innerHTML = str
+  }
+  // TEXT CONTENT
+  function textContent (el, str) {
+    if (!str && str !== 0) return el.textContent
+    el.textContent = str
+  }
+  function classHelper (els, action, className) {
+    if (!els) return
+    const map = {
+      c: 'contains',
+      a: 'add',
+      r: 'remove'
+    }  
+    const checkEl = function (el) {
+      if (!el.classList) return
+      if (action === 'c') {
+        return el.classList[map[action]](className)
+      } 
+      if (action === 'r') {
+        el.classList.remove(className)
+        return
+      }
+      el.classList[map[action]](className)
+    }
+    if (action === 'c') return checkEl(els)
+
+    if (!(els instanceof NodeList) && !Array.isArray(els)) return checkEl(els)
+    for (let i = 0; i < els.length; i++) checkEl(els[i])
+  }
+  function getKV (k) {
+    const o = Object.create(null)
+    const ls = location.search
+    const params = ls.split(/\?|&/g)
+    for (let i = 0; i < params.length; i++) {
+      const p = params[i]
+      if (p !== '') {
+        const thisKV = p.split('=')
+        o[thisKV[0]] = decodeURIComponent(thisKV[1])
+      }
+    }
+    if (k) {
+      if (o[k]) return o[k]
+      return null
+    }
+    return o
+  }
+  function pageActivityGetCookie () {
+    let pageActivityCookie = getSetCookie('page-activity')
+    try {
+      pageActivityCookie = JSON.parse(pageActivityCookie)
+    } catch (e) {}
+    if (!pageActivityCookie || typeof pageActivityCookie !== 'object') pageActivityCookie = { pages: 0, scrolls: 0, touches: 0, clicks: 0 }
+    return pageActivityCookie
+  }
+  function pageActivityUpdate (type) {
+    let pageActivityCookie = pageActivityGetCookie()
+    pageActivityCookie[type]++
+    if (type === 'pages') pageActivityCookie.lastView = new Date().toISOString()
+    getSetCookie('page-activity', JSON.stringify(pageActivityCookie))
+  }
+  function pageActivityCheck (options) {
+    let match = false
+    const pageActivityCookie = pageActivityGetCookie()
+    for (const field in options) {
+      if (pageActivityCookie[field] > options[field]) {
+        match = true
+        break
+      }
+    }
+    return match
+  }
+  function pageActivityInit () {
+    let scrollTimeout;
+    window.addEventListener('scroll', function () {
+      clearTimeout(scrollTimeout)
+      scrollTimeout = setTimeout(() => {
+        pageActivityUpdate('scrolls')
+      }, 100)
+    })
+    window.addEventListener('touchend', function () {
+      pageActivityUpdate('touches')
+    })
+    window.addEventListener('click', function () {
+      pageActivityUpdate('clicks')
+    })
+  }
+  function pageActivityWatchFn (fn, options) {
+    const events = ['scroll', 'touchend', 'click']
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i]
+      window.addEventListener(event, function () {
+        if (options) {
+          if (pageActivityCheck(options)) fn()
+          return
+        }
+        fn()
+      })
+    }
+  }
+  pageActivityUpdate('pages')
+  pageActivityInit()
+
+  function activateFadeIn (el) {
+    const fadeIns = document.querySelectorAll('.fade-in')
+    if (!fadeIns || !fadeIns.length) return
+    
+    setTimeout(() => {
+      for (let i = 0; i < fadeIns.length; i++) {
+        const thisEl = fadeIns[i]
+        classHelper(thisEl, 'a', 'active')
+      }
+    }, 2)
+  }
+  document.readyState !== 'loading' ? activateFadeIn() : document.addEventListener('DOMContentLoaded', activateFadeIn)
+</script>
