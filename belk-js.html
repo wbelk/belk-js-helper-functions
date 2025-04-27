@@ -45,10 +45,13 @@
   }
   // CREATE ELEMENT
   function createEl (tagName, propName) {
+    propName = propName || ''
     const el = document.createElement(tagName)
-    const isId = propName.indexOf('#') > -1
-    propName = propName.replace('.', '').replace('#', '')
-    if (propName) isId ? el.id = propName : el.className = propName
+    if (propName) {
+      const isId = propName.indexOf('#') > -1
+      propName = propName.replace('.', '').replace('#', '')
+      isId ? el.id = propName : el.className = propName
+    }
     return el
   }
   // APPEND CHILD
