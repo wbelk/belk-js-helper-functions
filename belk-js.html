@@ -85,19 +85,16 @@
       }
     }
   }
-  // GET CHILD
   function getChild (el, sel, all) {
     const childEls = all ? el.querySelectorAll(sel) : el.querySelector(sel)
     return all ? (childEls && childEls.length ? childEls : null) : childEls
   }
-  // INNER HTML
   function innerHtml (el, str) {
     if (!str && str !== '') return el.innerHTML
     el.innerHTML = str
   }
-  // TEXT CONTENT
   function textContent (el, str) {
-    if (!str && str !== 0) return el.textContent
+    if (!str && str !== 0 && str !== '') return el.textContent
     el.textContent = str
   }
   function classHelper (els, action, className) {
@@ -139,6 +136,57 @@
       return null
     }
     return o
+  }
+  function imageSize (src, max) {
+    const vals = src.split('/')
+    const lastVal = vals[vals.length - 1]
+    const query = lastVal.split('.').pop()
+    let prefix = lastVal.replace('.' + query, '')
+    const defaultVals = ['pico', 'icon', 'thumb', 'small', 'medium', 'large', 'grande', 'original', 'master']
+    const defaultRegex = new RegExp(`_(${defaultVals.join('|')})$`)
+    const defaultMatch = prefix.match(defaultRegex)
+    if (defaultMatch) {
+      vals[vals.length - 1] = prefix.replace(defaultRegex, '_' + max + 'x' + max) + '.' + query
+      return vals.join('/')
+    }
+    const thisMatch = lastVal.match(/_(\d+)*x(\d+)*$/)
+    if (!thisMatch) {
+      prefix = prefix + '_' + max + 'x' + max
+    } else {
+      prefix = prefix.replace(thisMatch[0], '_' + max + 'x' + max)
+    }
+    vals[vals.length - 1] = prefix + '.' + query
+    return vals.join('/')
+  }
+  function responsiveImage (options) {
+    const img = createEl('img')
+    let { src, alt, defaultSize, lazy } = options
+    if (!src) return img
+    alt = alt || ''
+    defaultSize = defaultSize || '900'
+    img.src = imageSize(src, defaultSize)
+    img.srcset = `${imageSize(src, 400)} 400w, ${imageSize(src, 600)} 600w, ${imageSize(src, 900)} 900w, ${imageSize(src, 1200)} 1200w, ${imageSize(src, 1600)} 1600w, ${imageSize(src, 2000)} 2000w`
+    img.alt = options.alt
+    if (lazy) img.loading = 'lazy'
+    return img
+  }
+  function priceTrim (price, options) {
+    if (!price) return ''
+    options = options || {}
+    if (options.divide100) {
+      price = (price / 100).toFixed(2)
+    }
+
+    try {
+      if (options.trim) {
+        price = parseFloat(price).toFixed(2)
+        if (price.match(/\.00/)) return price.replace('.00', '')
+      }
+    } catch (error) {
+      console.error('Error trimming price:', error)
+      return price
+    }
+    return price
   }
   function pageActivityGetCookie () {
     let pageActivityCookie = getSetCookie('page-activity')
@@ -206,6 +254,25 @@
         classHelper(thisEl, 'a', 'active')
       }
     }, 2)
+  }
+  function debounce(callback, wait) {
+    let timeoutId = null;
+
+    const debounced = (...args) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        callback(...args);
+      }, wait);
+    };
+
+    debounced.cancel = () => {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    };
+
+    return debounced;
   }
   document.readyState !== 'loading' ? activateFadeIn() : document.addEventListener('DOMContentLoaded', activateFadeIn)
 </script>
