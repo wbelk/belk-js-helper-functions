@@ -62,6 +62,20 @@ Options are 'a' for `add`, 'c' for `contains`, 'r' for `remove`.
 
 Accepts array of elements like `classHelper([el, el2], 'a', 'active')`.
 
+### `imageSize(src, max)`
+
+Update url to Shopify like `_900x900`.
+
+### `priceTrim(price, options)`
+
+Trim price for thousands and/or decimals.
+
+Options are `divide100` and `trim`, which will trim decimals if whole integer, like `30.00` becomes `30`.
+
+### `debounce(callback, wait)`
+
+Debounce for event listeners like `scroll` or `resize`. This debounce function kills calls within the `wait` interval, instead of delaying and queuing.
+
 ### `getKV(k)`
 
 Returns url querystring params as `object`.
